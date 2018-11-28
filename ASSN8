@@ -57,7 +57,7 @@ MAIN     CSECT
          LA    1,BPARMS                Load build parameters into R1
          L     15,=V(BUILD)            Load subroutine into R15
          BALR  14,15                   Branch to build subroutine
-*        XDUMP TABLE,                  Print out table in hexadecimal
+         XDUMP TABLE,EOT-TABLE         Print out table in hexadecimal
 *        LA    1,PPARMS                Load print parameters into R1
 *        L     15,=V(PRINT)            Load print subroutine into R15
 *        BALR  14,15                   Branch to print subroutine
@@ -77,12 +77,12 @@ MAIN     CSECT
 ***< MAIN LTORGS>
 *
          LTORG
-         ORG MAIN+((*-PROG8+15)/16)*16
-TABLE    DC    25CL7                   Table for storage
+         ORG MAIN+((*-MAIN+15)/16)*16
+TABLE    DC    25CL17'                 '
 EOT      DS    F                       End of table
 BPARMS   DC    A(TABLE)                Address for table
          DC    A(EOT)                  Address for end of table
-HEAD1    DC    CL52'                         Players in On-Line Bowling'
+HEAD1    DC    CL50'                        Players in On-Line Bowling'
 HEAD2    DC    CL50'                            Players In Order by ID'
 *
 ***< RESTORE REGISTERS >
@@ -130,7 +130,7 @@ BUILD    CSECT
 *
          LM    7,8,0(1)                Load multiple parameters
          USING BLABL,7                 Load DSECT for table
-         GDATA XREAD BUFFER,80         Get data from file line by line
+GDATA    XREAD BUFFER,80               Get data from file line by line
          BL    BEND                    If less than goto build end
          LA    1,BUFFER                Otherwise load line into R1
 *
@@ -146,9 +146,9 @@ BUILD    CSECT
 *
 ***< Encrypt username now that we have id number >
 *
-         XC    USERNAME(4),ID           Hash username
-         XC    USERNAME+4(4),ID         Hash username
-         XC    USERNAME+8(4),ID         Hash username
+         XC    USERNAME(4),USERNAME    Hash username
+         XC    USERNAME+4(4),USERNAME  Hash username
+         XC    USERNAME+8(4),USERNAME  Hash username
 *
 ***< Get date >
 *
@@ -171,14 +171,27 @@ BUILD    CSECT
 *
 ***< Get Super Player Status >
 *
+         MVC   SPSTATUS(1),36(1)       Store Super player status
 *
 ***< Get number of recent games in last week >
 *
-*         MVC   SPSTATUS(1),36(1)       Store Super player status   
+         MVC   TEMP(2),39(1)           Store games played this week
+*
+***< Somehow merge this all into SPSTATUS >
+*
+         CLC   SPSTATUS(1),=CL1'Y'     Check super player status is y
+         SR    10,10                   Zero out register
+         BC    B'1000',ITSAONE         If == y then SPSTATUS is 1
+         L     10,=CL1'0'              Otherwise SPSTATUS is 0
+         ST    10,SPSTATUS             Put the 0 in SPSTATUS
+         B     AGAIN
+ITSAONE  L     10,=CL1'1'              Put a 1 into SPSTATUS
+         ST    10,SPSTATUS
+         B     AGAIN
 *
 ***< Loop stuff & gotos >
 *
-         LA    7,25(,7)                Increment pointer
+AGAIN    LA    7,25(,7)                Increment pointer
          B     GDATA                   Get more data from file
 BEND     DS    0H
          ST    7,0(0,8)                Store EOT
