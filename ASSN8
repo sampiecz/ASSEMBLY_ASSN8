@@ -1,0 +1,316 @@
+//KC03O8EA JOB ,'SAM PIECZ',MSGCLASS=H
+//STEP1 EXEC PGM=ASSIST
+//STEPLIB DD DSN=KC02293.ASSIST.LOADLIB,DISP=SHR
+//SYSPRINT DD SYSOUT=*
+//SYSIN DD *
+***************************************************
+* ASSIGNMENT EIGHT
+*
+* NAME: SAMUEL PIECZ
+*
+* CSECT: MAIN
+*
+* REGISTER USAGE:
+* R1                                   Parameter list for subroutine
+* R2                                   Not used
+* R3                                   Not used
+* R4                                   Not used
+* R5                                   Not used
+* R6                                   Not used
+* R7                                   Not used
+* R8                                   Not used
+* R9                                   Not used
+* R10                                  Not used
+* R11                                  Not used
+* R12                                  Not used
+* R13                                  Not used
+* R14                                  Not used
+* R15                                  Not used
+*
+***************************************************
+*
+***< BUILD DSECT >
+*
+BLABL    DSECT                         Name to refer to DSECT
+USERNAME DS    8C                      Username is 8 bytes
+HIGHSCRE DS    PL2                     High score is 2 packed length
+DATE     DS    2C                      Date is 2 bytes
+IDNUM    DS    4C                      Id number is 4 bytes
+SPSTATUS DS    1C                      Super play status 7 bytes
+*
+***< MAIN >
+*
+MAIN     CSECT
+*
+***< ENTRY LINKAGE>
+*
+         STM   14,12,12(13)            Another situation where I think
+         LR    12,15                   you should understand that
+         USING MAIN,12                 I already know what this does.
+         LA    14,MAINSAVE             The linkage code allows you to
+         ST    14,8(0,13)              break code down intosubroutines
+         ST    13,4(0,14)
+         LR    13,14
+*
+***< START LOGIC >
+*
+         LA    1,BPARMS                Load build parameters into R1
+         L     15,=V(BUILD)            Load subroutine into R15
+         BALR  14,15                   Branch to build subroutine
+*        XDUMP TABLE,                  Print out table in hexadecimal
+*        LA    1,PPARMS                Load print parameters into R1
+*        L     15,=V(PRINT)            Load print subroutine into R15
+*        BALR  14,15                   Branch to print subroutine
+*        LA    1,SPARMS                Load sort parameters into R1
+*        L     15,=V(SORTID)           Load sort subroutine into R15
+*        BALR  14,15                   Branch to print subroutine
+*        LA    1,PPARMS2               Load print parameters 2  into R1
+*        L     15,=V(PRINT)            Load print subroutine into R15
+*        BALR  14,15                   Branch to print subroutine
+*
+***< EXIT LINKAGE >
+*
+         L     13,4(0,13)              Exit linkage code. Never
+         LM    14,12,12(13)            changes. Switches control
+         BR    14                      back to main for more subrtnes.
+*
+***< MAIN LTORGS>
+*
+         LTORG
+         ORG MAIN+((*-PROG8+15)/16)*16
+TABLE    DC    25CL7                   Table for storage
+EOT      DS    F                       End of table
+BPARMS   DC    A(TABLE)                Address for table
+         DC    A(EOT)                  Address for end of table
+HEAD1    DC    CL52'                         Players in On-Line Bowling'
+HEAD2    DC    CL50'                            Players In Order by ID'
+*
+***< RESTORE REGISTERS >
+*
+MAINSAVE DS    18F                     Restore registers.
+***************************************************
+*
+* CSECT: BUILD
+*
+* REGISTER USAGE:
+* R1                                   Reserved for TRT
+* R2                                   Reserved for TRT
+* R3
+* R4
+* R5
+* R6
+* R7                                   Holds Table's address
+* R8                                   Holds EOT's address
+* R9                                   Location of current itemin file
+* R10
+* R11
+* R12
+* R13
+* R14
+* R15
+*
+***************************************************
+*
+***< BUILD SUBROUTINE >
+*
+BUILD    CSECT
+*
+***< ENTRY LINKAGE>
+*
+         STM   14,12,12(13)            Yes, fascinating, here we
+         LR    12,15                   see a wild subroutine entry
+         USING BUILD,12                linkage in it's natural
+         USING BLABL,2                 habitat. It is even using
+         LA    14,BSAVE                the dsect of build labels
+         ST    13,4(0,14)              defined before main. This
+         ST    14,8(0,13)              will allows me to reference
+         LR    13,14                   things more easily. No offsets.
+*
+***< START LOGIC>
+*
+         LM    7,8,0(1)                Load multiple parameters
+         USING BLABL,7                 Load DSECT for table
+         GDATA XREAD BUFFER,80         Get data from file line by line
+         BL    BEND                    If less than goto build end
+         LA    1,BUFFER                Otherwise load line into R1
+*
+***< Get username from line >
+*
+         MVC   USERNAME(8),0(1)        Get username in username
+*
+***< Get id number >
+*
+         PACK  TEMP(9),10(9,1)         Pack in username
+         CVB   2,TEMP                  Convert username to binary
+         STCM  2,B'1111',IDNUM         Store username in proper var
+*
+***< Encrypt username now that we have id number >
+*
+         XC    USERNAME(4),ID           Hash username
+         XC    USERNAME+4(4),ID         Hash username
+         XC    USERNAME+8(4),ID         Hash username
+*
+***< Get date >
+*
+         PACK  TEMP(8),21(4,1)         Pack year into temp
+         SP    TEMP(8),YNUM(3)         Minus offset
+         CVB   2,TEMP                  Convert temp to binary
+         SLL   2,9                     Shift year by 9
+         PACK  TEMP(8),25(2,1)         Pack in the day
+         CVB   3,TEMP                  Convert the day to binary
+         SLL   3,4                     Shift day by 4
+         XR    2,3                     Add to R2
+         PACK  TEMP(8),27(2,1)         Pack temp with month
+         CVB   3,TEMP                  Convert month to binary
+         XR    2,3                     Add to R2
+         STCM  2,B'0011',DATE          Put it all in DATE
+*
+***< Get high score >
+*
+         PACK  HIGHSCRE(2),31(3,1)     Pack high score into HIGHSCRE
+*
+***< Get Super Player Status >
+*
+*
+***< Get number of recent games in last week >
+*
+*         MVC   SPSTATUS(1),36(1)       Store Super player status   
+*
+***< Loop stuff & gotos >
+*
+         LA    7,25(,7)                Increment pointer
+         B     GDATA                   Get more data from file
+BEND     DS    0H
+         ST    7,0(0,8)                Store EOT
+*
+***< EXIT LINKAGE >
+*
+         L     13,4(0,13)              The elusive exit linkage.
+         LM    14,12,12(13)            Do not disturb it as it is
+         BR    14                      sleeping. Anyone read these?
+*
+***< LTORG FOR BUILD>
+*
+         LTORG                         Define variables with LTORG
+BUFFER   DC    80C' '                  Buffer for input data
+         DC    C'*'                    Delimiter for end of buffer
+TEMP     DS    D                       Temporary variable
+YNUM     DC    PL3'1980'               Year for offset of dates
+*
+***< RESTORE REGISTERS>
+*
+BSAVE    DS    18F                     Restore those registers.
+***************************************************
+*
+* CSECT: PRINT
+*
+* REGISTER USAGE:
+* R1                                   Not used
+* R2                                   Not used
+* R3                                   Not used
+* R4                                   Not used
+* R5                                   Not used
+* R6                                   Holds a zero
+* R7                                   Contains table address
+* R8                                   Contains EOT address
+* R9                                   Contains page counter address
+* R10                                  Not used
+* R11                                  Not used
+* R12                                  Linkage register
+* R13                                  Linkage register
+* R14                                  Linkage register
+* R15                                  Linkage register
+*
+***************************************************
+*
+***< PRINT SUBROUTINE >
+*
+PRINT    CSECT
+*
+***< ENTRY LINKAGE>
+*
+         STM   14,12,12(13)            Yes, fascinating, here we
+         LR    12,15                   see a wild subroutine entry
+         USING PRINT,12                linkage in it's natural
+         USING BLABL,2                 habitat. It is even using
+         LA    14,PSAVE                the DSECT of build labels
+         ST    13,4(0,14)              defined before main. This
+         ST    14,8(0,13)              will allows me to reference
+         LR    13,14                   things more easily. No offsets.
+*
+***< START LOGIC>
+*
+*
+***< EXIT LINKAGE >
+*
+PEND     L     13,4(0,13)              The elusive exit linkage.
+         LM    14,12,12(13)            Do not disturb it as it is
+         BR    14                      sleeping. Anyone read these?
+*
+***< LTORG FOR PRINT >
+*
+         LTORG                         Define variables with LTORG
+*
+***< RESTORE REGISTERS>
+*
+PSAVE    DS    18F                     Restore those registers.
+***************************************************
+*
+* CSECT: SORTID
+*
+* REGISTER USAGE:
+* R1                                   Not used
+* R2                                   Start of the sorting location
+* R3                                   UPPER table
+* R4                                   LOWER table
+* R5                                   Not used
+* R6                                   Not used
+* R7                                   Pointer to TABLE
+* R8                                   Pointer to EOT
+* R9                                   Not used
+* R10                                  Not used
+* R11                                  Not used
+* R12                                  Linkage register
+* R13                                  Linkage register
+* R14                                  Linkage register
+* R15                                  Linkage register
+*
+***************************************************
+*
+***< SORTID SUBROUTINE >
+*
+SORTID     CSECT
+*
+***< ENTRY LINKAGE>
+*
+         STM   14,12,12(13)            Yes, fascinating, here we
+         LR    12,15                   see a wild subroutine entry
+         USING SORTID,12                 linkage in it's natural
+         LA    14,SSAVE                the DSECT of build labels
+         ST    13,4(0,14)              defined before main. This
+         ST    14,8(0,13)              will allows me to reference
+         LR    13,14                   things more easily. No offsets.
+*
+***< START LOGIC>
+*
+*
+***< EXIT LINKAGE >
+*
+SEND     L     13,4(0,13)              The elusive exit linkage.
+         LM    14,12,12(13)            Do not disturb it as it is
+         BR    14                      sleeping. Anyone read these?
+*
+***< LTORG FOR SORTID >
+*
+         LTORG                         Define variables with LTORG
+*
+***< RESTORE REGISTERS>
+*
+SSAVE    DS    18F                     Restore those registers.
+*
+***< End the entire program >
+*
+         END   MAIN
+/*
+//FT05F001  DD  DSN=KC02314.AUTUMN18.CSCI360.HW8DATA,DISP=SHR
+//
