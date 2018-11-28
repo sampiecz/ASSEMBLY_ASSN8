@@ -58,12 +58,14 @@ MAIN     CSECT
          L     15,=V(BUILD)            Load subroutine into R15
          BALR  14,15                   Branch to build subroutine
          XDUMP TABLE,EOT-TABLE         Print out table in hexadecimal
-*        LA    1,PPARMS                Load print parameters into R1
-*        L     15,=V(PRINT)            Load print subroutine into R15
-*        BALR  14,15                   Branch to print subroutine
+         XPRNT HEAD1,50
+         LA    1,PPARMS                Load print parameters into R1
+         L     15,=V(PRINT)            Load print subroutine into R15
+         BALR  14,15                   Branch to print subroutine
 *        LA    1,SPARMS                Load sort parameters into R1
 *        L     15,=V(SORTID)           Load sort subroutine into R15
 *        BALR  14,15                   Branch to print subroutine
+*        XPRNT HEAD2,50
 *        LA    1,PPARMS2               Load print parameters 2  into R1
 *        L     15,=V(PRINT)            Load print subroutine into R15
 *        BALR  14,15                   Branch to print subroutine
@@ -84,6 +86,8 @@ BPARMS   DC    A(TABLE)                Address for table
          DC    A(EOT)                  Address for end of table
 HEAD1    DC    CL50'                        Players in On-Line Bowling'
 HEAD2    DC    CL50'                            Players In Order by ID'
+PPARMS   DC    A(TABLE)
+         DC    A(EOT)
 *
 ***< RESTORE REGISTERS >
 *
@@ -129,7 +133,6 @@ BUILD    CSECT
 ***< START LOGIC>
 *
          LM    7,8,0(1)                Load multiple parameters
-         USING BLABL,7                 Load DSECT for table
 GDATA    XREAD BUFFER,80               Get data from file line by line
          BL    BEND                    If less than goto build end
          LA    1,BUFFER                Otherwise load line into R1
@@ -140,9 +143,9 @@ GDATA    XREAD BUFFER,80               Get data from file line by line
 *
 ***< Get id number >
 *
-         PACK  TEMP(9),10(9,1)         Pack in username
-         CVB   2,TEMP                  Convert username to binary
-         STCM  2,B'1111',IDNUM         Store username in proper var
+         PACK  TEMP(9),10(9,1)         Pack in id number
+         CVB   2,TEMP                  Convert id number to binary
+         STCM  2,B'1111',IDNUM         Store id number in proper var
 *
 ***< Encrypt username now that we have id number >
 *
@@ -253,6 +256,11 @@ PRINT    CSECT
 *
 ***< START LOGIC>
 *
+         LM    7,8,0(1)                Load multiple parameters
+         XPRNT COLHEAD,79              Print out the column header
+LOOP     DS    0H                      Loop to iterate over table
+         CR    7,8                     Check if EOT == TABLE
+         BE    PEND                    If so stop and goto PEND
 *
 ***< EXIT LINKAGE >
 *
@@ -263,6 +271,8 @@ PEND     L     13,4(0,13)              The elusive exit linkage.
 ***< LTORG FOR PRINT >
 *
          LTORG                         Define variables with LTORG
+COLHEAD  DC    CL39'User Name    ID Number  High Score Date'
+         DC    CL40'  High Score  Super Player  Recent Games'
 *
 ***< RESTORE REGISTERS>
 *
