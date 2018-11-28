@@ -182,10 +182,10 @@ GDATA    XREAD BUFFER,80               Get data from file line by line
          CLC   SPSTATUS(1),=CL1'Y'     Check super player status is y
          SR    10,10                   Zero out register
          BC    B'1000',ITSAONE         If == y then SPSTATUS is 1
-         L     10,=CL1'0'              Otherwise SPSTATUS is 0
+         L     10,=F'0'                Otherwise SPSTATUS is 0
          ST    10,SPSTATUS             Put the 0 in SPSTATUS
          B     AGAIN
-ITSAONE  L     10,=CL1'1'              Put a 1 into SPSTATUS
+ITSAONE  L     10,=F'1'                Put a 1 into SPSTATUS
          ST    10,SPSTATUS
          B     AGAIN
 *
