@@ -8,6 +8,31 @@
 *
 * NAME: SAMUEL PIECZ
 *
+* HOW THIS ASSIGNMENT MAKES ME FEEL:
+*
+*                        (
+*                          )     (
+*                   ___...(-------)-....___
+*               .-""       )    (          ""-.
+*         .-'``'|-._             )         _.-|
+*        /  .--.|   `""---...........---""`   |
+*       /  /    |                             |
+*       |  |    |                             |
+*        \  \   |       ___         ___       |
+*         `\ `\ |                             |
+*           `\ `|          __________         |
+*           _/ /\                             /
+*          (__/  \                           /
+*       _..---""` \                         /`""---.._
+*    .-'           \                       /          '-.
+*   :               `-.__             __.-'              :
+*   :                  ) ""---...---"" (                 :
+*    '._               `"--...___...--"`              _.'
+*      \""--..__                              __..--""/
+*       '._     """----.....______.....----"""     _.'
+*          `""--..,,_____            _____,,..--""`
+*                        `"""----"""`
+*
 * CSECT: MAIN
 *
 * REGISTER USAGE:
@@ -149,9 +174,8 @@ GDATA    XREAD BUFFER,80               Get data from file line by line
 *
 ***< Encrypt username now that we have id number >
 *
-         XC    USERNAME(4),USERNAME    Hash username
-         XC    USERNAME+4(4),USERNAME  Hash username
-         XC    USERNAME+8(4),USERNAME  Hash username
+         XC    USERNAME(4),IDNUM       Hash username
+         XC    USERNAME+4(4),IDNUM     Hash username
 *
 ***< Get date >
 *
@@ -185,10 +209,10 @@ GDATA    XREAD BUFFER,80               Get data from file line by line
          CLC   SPSTATUS(1),=CL1'Y'     Check super player status is y
          SR    10,10                   Zero out register
          BC    B'1000',ITSAONE         If == y then SPSTATUS is 1
-         L     10,=F'0'                Otherwise SPSTATUS is 0
+         L     10,=X'00'                Otherwise SPSTATUS is 0
          ST    10,SPSTATUS             Put the 0 in SPSTATUS
          B     AGAIN
-ITSAONE  L     10,=F'1'                Put a 1 into SPSTATUS
+ITSAONE  L     10,=X'01'                Put a 1 into SPSTATUS
          ST    10,SPSTATUS
          B     AGAIN
 *
@@ -229,7 +253,7 @@ BSAVE    DS    18F                     Restore those registers.
 * R6                                   Holds a zero
 * R7                                   Contains table address
 * R8                                   Contains EOT address
-* R9                                   Contains page counter address
+* R9                                   Not used
 * R10                                  Not used
 * R11                                  Not used
 * R12                                  Linkage register
@@ -258,9 +282,54 @@ PRINT    CSECT
 *
          LM    7,8,0(1)                Load multiple parameters
          XPRNT COLHEAD,79              Print out the column header
+         L     6,=F'0'                 Counter for items
 LOOP     DS    0H                      Loop to iterate over table
          CR    7,8                     Check if EOT == TABLE
          BE    PEND                    If so stop and goto PEND
+*
+***< Store username for print >
+*
+         XC    USERNAME(4),IDNUM       Hash username
+         XC    USERNAME+4(4),IDNUM     Hash username
+         MVC   PUNAME(8),USERNAME      Print username unhashed
+*
+***< Store Id number for print >
+*
+         MVC   PIDNUM(8),IDNUM         Print idnumber probably needs
+*                                      To be converted to decimal....
+***< Store date for print >
+*
+         ICM   R9,B'1111',DATE         Put the entire date into R9
+         STCM  R9,B'0011',PYEAR        From here I need to put R9 in
+         STCM  R9,B'1101',PMONTH       a var to be printed
+         STCM  R9,B'1110',PDAY
+*
+***< Print out the high score >
+*
+         SR    9,9
+         ICM   R9,B'1111',HIGHSCRE
+         STCM  R9,B'0000',PHSCRE
+*
+***< Store super player status for print >
+*
+         SR    9,9                     Zero out register 9
+         ICM   R9,B'0111',SPSTATUS     Load in SPSTATUS
+         CLM   R9,B'1000',=X'01000000' Check if first bit is 01
+         BC    B'1000',SETYES          If true then goto SETYES
+         MVC   PSPSTAT,=CL2'NO'        Otherwise set to print no
+SETYES   MVC   PSPSTAT,=CL3'YES'       Set to print yes
+*
+***< Store number of recent games for print >
+*
+         SR    9,9                     Zero out our trusty R9
+         ICM   R9,B'0111',SPSTATUS     Only bits 3-8 please
+* May need to CVD? first
+         STCM  R9,B'1000',PRGAME
+*
+***< Print line at end and go to top >
+*
+         XPRNT PLINE,73                Print it all out
+         B     LOOP                    Go back to top
 *
 ***< EXIT LINKAGE >
 *
@@ -273,8 +342,24 @@ PEND     L     13,4(0,13)              The elusive exit linkage.
          LTORG                         Define variables with LTORG
 COLHEAD  DC    CL39'User Name    ID Number  High Score Date'
          DC    CL40'  High Score  Super Player  Recent Games'
+PLINE    DC    CL1'0'                  Line for printing
+PUNAME   DS    8C' '                   For print username
+         DC    CL4' '                  Young space bro
+PIDNUM   DS    8C' '                   For printing id number
+         DC    CL4' '                  Young space bro
+PYEAR    DS    4C' '
+         DC    1C'/'
+PMONTH   DS    2C' '
+         DC    1C'/'
+PDAY     DS    2C' '
+         DC    CL9' '                  Young space bro
+PHSCRE   DS    3C' '                   You know what this is
+         DC    CL9' '                  Young space bro
+PSPSTAT  DS    3C' '                   You know what this is
+         DC    CL12' '                 Young space bro
+PRGAME   DS    2C' '                   You know what this is
 *
-***< RESTORE REGISTERS>
+***< RESTORE REGISTERS >
 *
 PSAVE    DS    18F                     Restore those registers.
 ***************************************************
