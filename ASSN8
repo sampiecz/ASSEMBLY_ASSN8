@@ -209,10 +209,10 @@ GDATA    XREAD BUFFER,80               Get data from file line by line
          CLC   SPSTATUS(1),=CL1'Y'     Check super player status is y
          SR    10,10                   Zero out register
          BC    B'1000',ITSAONE         If == y then SPSTATUS is 1
-         L     10,=X'00'                Otherwise SPSTATUS is 0
+         L     10,=F'0'               Otherwise SPSTATUS is 0
          ST    10,SPSTATUS             Put the 0 in SPSTATUS
          B     AGAIN
-ITSAONE  L     10,=X'01'                Put a 1 into SPSTATUS
+ITSAONE  L     10,=F'1'                Put a 1 into SPSTATUS
          ST    10,SPSTATUS
          B     AGAIN
 *
@@ -299,32 +299,32 @@ LOOP     DS    0H                      Loop to iterate over table
 *                                      To be converted to decimal....
 ***< Store date for print >
 *
-         ICM   R9,B'1111',DATE         Put the entire date into R9
-         STCM  R9,B'0011',PYEAR        From here I need to put R9 in
-         STCM  R9,B'1101',PMONTH       a var to be printed
-         STCM  R9,B'1110',PDAY
+         ICM   9,B'1111',DATE         Put the entire date into 9
+         STCM  9,B'0011',PYEAR        From here I need to put 9 in
+         STCM  9,B'1101',PMONTH       a var to be printed
+         STCM  9,B'1110',PDAY
 *
 ***< Print out the high score >
 *
          SR    9,9
-         ICM   R9,B'1111',HIGHSCRE
-         STCM  R9,B'0000',PHSCRE
+         ICM   9,B'1111',HIGHSCRE
+         STCM  9,B'0000',PHSCRE
 *
 ***< Store super player status for print >
 *
          SR    9,9                     Zero out register 9
-         ICM   R9,B'0111',SPSTATUS     Load in SPSTATUS
-         CLM   R9,B'1000',=X'01000000' Check if first bit is 01
+         ICM   9,B'0111',SPSTATUS     Load in SPSTATUS
+         CLM   9,B'1000',=X'01000000' Check if first bit is 01
          BC    B'1000',SETYES          If true then goto SETYES
          MVC   PSPSTAT,=CL2'NO'        Otherwise set to print no
 SETYES   MVC   PSPSTAT,=CL3'YES'       Set to print yes
 *
 ***< Store number of recent games for print >
 *
-         SR    9,9                     Zero out our trusty R9
-         ICM   R9,B'0111',SPSTATUS     Only bits 3-8 please
+         SR    9,9                     Zero out our trusty 9
+         ICM   9,B'0111',SPSTATUS     Only bits 3-8 please
 * May need to CVD? first
-         STCM  R9,B'1000',PRGAME
+         STCM  9,B'1000',PRGAME
 *
 ***< Print line at end and go to top >
 *
